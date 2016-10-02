@@ -29,10 +29,11 @@ let fs = require('fs');
 let vm = require('vm');
 let yasmini = require('yasmini');
 let util = require('util');
+let Promise = require('bluebird');
 module.exports = yasmini;
 
 // preserve that value:
-let original_describe = yasmini.describe;
+yasmini.original_describe = yasmini.describe;
 
 // Messages in two languages (fr and en):
 
@@ -155,36 +156,57 @@ yasmini.messagefn = function (key) {
 };
 
 /* Check student's code with teacher's tests
-CAUTION: this supposes a single describe() in spec/perfect-spec.js
  */
 
 let evalStudentTests_ = function (config, specfile) {
+    yasmini.verbalize("+", yasmini.messagefn('startTests'));
+    let descriptions = [];
+    function _describe (msg, fn) {
+        let desc = {msg: msg, fn: fn};
+        descriptions.push(desc);
+    }
+    function run_description (i) {
+        yasmini.verbalize("##", process.uptime(),
+                          " run_description " + i);
+        if ( i < descriptions.length ) {
+            let desc = descriptions[i];
+            return yasmini.original_describe(desc.msg, desc.fn)
+                .hence(function (d) {
+                    yasmini.verbalize("##", process.uptime(),
+                                      " after describe");
+                    if ( !d.pass && d.stopOnFailure ) {
+                        return Promise.reject(false);
+                    } else {
+                        return run_description(i+1);
+                    }
+                })
+        } else {
+            return Promise.resolve(true);
+        }
+    }
+    let current = yasmini.global;
+    Object.assign(current, {
+        require:   yasmini.imports.module.require,
+        yasmini:   yasmini,
+        //console:   yasmini.imports.console, // no associated setter!
+        describe:  _describe,
+        it:        yasmini.it,
+        expect:    yasmini.expect,
+        fail:      yasmini.fail  
+    });
+    for (let fname in config.functions) {
+        current[fname] = config.module[fname];
+    }
     return new Promise(function (resolve, reject) {
-        yasmini.verbalize("+", yasmini.messagefn('startTests'));
         let src = fs.readFileSync(specfile);
-        function _describe (msg, fn) {
-            function hencer (d) {
-                if ( d.pass ) {
-                    config.exitCode = 0;
-                }
-                resolve(d.pass);
-            }
-            return original_describe(msg, fn).hence(hencer);
-        }
-        let current = yasmini.global;
-        Object.assign(current, {
-            require:   yasmini.imports.module.require,
-            yasmini:   yasmini,
-            //console:   yasmini.imports.console, // no associated setter!
-            describe:  _describe,
-            it:        yasmini.it,
-            expect:    yasmini.expect,
-            fail:      yasmini.fail  
-        });
-        for (let fname in config.functions) {
-            current[fname] = config.module[fname];
-        }
         vm.runInNewContext(src, current);
+        yasmini.verbalize("##", process.uptime(),
+                          " after loading teacher tests");
+    }).then(run_description(0))
+      .finally(function (b) {
+          yasmini.verbalize("##", process.uptime(),
+                            " after run_descriptions");
+          return b;
     });
 };
 
@@ -197,7 +219,7 @@ CAUTION: this supposes at most one describe() in student's code!
 */
 
 let evalStudentCode_ = function (config, codefile) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function (resolve /*, reject */) {
         yasmini.verbalize("+", yasmini.messagefn('startEvaluation'));
         // accumulate student's describe() invocations:
         config.student = {
@@ -210,7 +232,7 @@ let evalStudentCode_ = function (config, codefile) {
                 desc.description = this;
                 return fn.call(this);
             }
-            return original_describe(msg, fnx);
+            return yasmini.original_describe(msg, fnx);
         }
         let src = fs.readFileSync(codefile);
         config.module = vm.createContext({
@@ -327,13 +349,13 @@ yasmini.markFile = function (config, codefile, specfile) {
 
     function postEvalStudentCode (b) {
         yasmini.verbalize("##", process.uptime(),
-                          ' after evalStudentCode');
+                          ' after evalStudentCode: ' + b);
         if ( b ) {
             yasmini.verbalize("+", yasmini.messagefn('finishEval'));
             return evalStudentTests_(config, specfile)
-                .catch(function () {
+                .catch(function (exc) {
                     yasmini.verbalize("##", process.uptime(),
-                                      ' catch after evalStudentTests');
+                                      ' catch after evalStudentTests: ' + exc);
                     return false;
                 })
                 .then(postStudentTests);
@@ -344,7 +366,7 @@ yasmini.markFile = function (config, codefile, specfile) {
     }
     function postStudentTests (b) {
         yasmini.verbalize("##", process.uptime(),
-                          ' after evalStudentTests');
+                          ' after evalStudentTests: ' + b);
         if ( ! b ) {
             yasmini.verbalize("-", yasmini.messagefn('stopEval'));
         }

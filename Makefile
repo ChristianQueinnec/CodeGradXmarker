@@ -8,7 +8,7 @@ clean :
 # ############## Working rules:
 
 lint :
-	jshint codegradxmarker.js spec/*.js
+	node_modules/.bin/jshint codegradxmarker.js spec/*.js
 
 tests : clean
 	-rm .fw4ex.json [0-9]*ml
