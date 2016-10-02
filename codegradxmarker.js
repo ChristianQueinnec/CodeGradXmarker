@@ -321,7 +321,6 @@ yasmini.markFile = function (config, codefile, specfile) {
     yasmini.config = config;
 
     // Check student's code with its own tests (if any):
-    require('codegradxmarker/verbalizer');
     yasmini.outputter = function (msg) {
         yasmini.process.stdout.write(msg);
     };
@@ -362,4 +361,102 @@ yasmini.markFile = function (config, codefile, specfile) {
         .then(postEvalStudentCode);
 };
 
-// end of yasmini/codegrax/marker.js
+// Verbalization
+
+yasmini.class.Expectation.prototype.beginHook = function () {
+    // exitCode is initially undefined. We initialize it with 0 as soon
+    // as at least one expectation is to be processed:
+    if ( ! yasmini.config.exitCode ) {
+        yasmini.config.exitCode = 0;
+    }
+    this.alreadyShownTest = false;
+    // Run the endHook of the previous expectation if any:
+    let n = this.specification.expectations.length;
+    if ( n > 1 ) {
+        let previousExpectation = this.specification.expectations[n-2];
+        previousExpectation.endHook();
+    }
+    this.update_();
+    yasmini.printPartialResults_();
+};
+
+yasmini.class.Expectation.prototype.matchHook = function () {
+    var msg;
+    if ( ! this.alreadyShownTest ) {
+        if ( this.verbose ) {
+            msg = 'Test #' + this.index + ' ';
+        }
+        if ( this.code ) {
+            msg = (msg || '') + yasmini.messagefn('startEval', this.code);
+        }
+        if (msg) {
+            yasmini.verbalize('+', msg);
+        }
+        this.alreadyShownTest = true;
+    }
+    this.update_();
+    yasmini.printPartialResults_();
+};
+
+yasmini.class.Expectation.prototype.endHook = function () {
+    var msg;
+    if ( ! this.runEndHook ) {
+        if (this.pass) {
+            msg = yasmini.messagefn('bravo');
+            yasmini.verbalize('+', msg);
+        } else {
+            if ( this.raisedException ) {
+                msg = yasmini.messagefn(
+                    'failException', this.index, this.exception);
+            } else {
+                msg = yasmini.messagefn('fail', this.index, this.actual);
+            }
+            yasmini.verbalize('-', msg);
+        }
+        this.runEndHook = true;
+    }
+    this.update_();
+    yasmini.printPartialResults_();
+};
+
+yasmini.class.Specification.prototype.beginHook = function () {
+    let msg = this.message;
+    yasmini.verbalize('+', msg);
+    this.update_();
+    yasmini.printPartialResults_();
+};
+
+yasmini.class.Specification.prototype.endHook = function () {
+    this.update_();
+    yasmini.printPartialResults_();
+    var msg;
+    if (this.pass) {
+        // Here expectationAttempted = expectationIntended
+        msg = "+ " + yasmini.messagefn('fullSuccess', 
+                                       this.expectationSuccessful, 
+                                       this.expectationAttempted);
+    } else {
+        msg = "- " + yasmini.messagefn(
+            'partialSuccess',
+            this.expectationSuccessful,
+            this.expectationIntended ?
+                this.expectationIntended :
+                this.expectationAttempted );
+    }
+    yasmini.verbalize(msg);
+};
+
+yasmini.class.Description.prototype.beginHook = function () {
+    yasmini.config.descriptions.push(this);
+    let msg = yasmini.messagefn('checkFunction', this.message);
+    yasmini.verbalize("+", msg);
+    this.update_();
+    yasmini.printPartialResults_();
+};
+
+yasmini.class.Description.prototype.endHook = function () {
+    this.update_();
+    yasmini.printPartialResults_();
+};
+
+// end of codegraxmarker.js
