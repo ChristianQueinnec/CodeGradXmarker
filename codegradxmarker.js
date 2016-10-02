@@ -175,11 +175,12 @@ let evalStudentTests_ = function (config, specfile) {
                     yasmini.verbalize("##", process.uptime(),
                                       " after describe");
                     if ( !d.pass && d.stopOnFailure ) {
+                        config.exitCode = 1;
                         return Promise.reject(false);
                     } else {
                         return run_description(i+1);
                     }
-                })
+                });
         } else {
             return Promise.resolve(true);
         }
