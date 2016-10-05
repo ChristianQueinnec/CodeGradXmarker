@@ -1,6 +1,6 @@
 {
   "name": "codegradxmarker",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CodeGradX marker and verbalizer library",
   "keywords": [
     "CodeGradX",
@@ -17,8 +17,8 @@
   },
   "dependencies": {
     "yasmini": "^0.2.9",
-      "bluebird": "^3.4",
-      "he": "^1.1"
+    "bluebird": "^3.4",
+    "he": "^1.1"
   },
   "devDependencies": {
     "jshint": "^2.9"

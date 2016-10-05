@@ -206,7 +206,7 @@ let evalStudentTests_ = function (config, specfile) {
     }).then(run_description(0))
       .finally(function (b) {
           yasmini.verbalize("##", process.uptime(),
-                            " after run_descriptions");
+                            " after run_descriptions " + b);
           return b;
     });
 };
