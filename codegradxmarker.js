@@ -1,4 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
+// Time-stamp: "2016-10-10 17:38:42 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -17,11 +18,9 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 See https://github.com/paracamplus/Yasmini.git
 
-This module is loaded with require("yasmini/codegradx/marker");
-therefore the yasmini global variable is defined. This module
-describes how student's code (and tests) are run and compared to
-teacher's code. This plugin is run within CodeGradX infrastructure to
-generate the student's report.
+ This module describes how student's code (and tests) are run and
+compared to teacher's code. This plugin is run within CodeGradX
+infrastructure to generate the student's report.
 
 */
 
@@ -58,7 +57,7 @@ yasmini.message = {
             return "Votre code ne passe pas vos propres tests!";
         },
         notAFunction: function (fname) {
-            return fname, " n'est pas une fonction";
+            return fname + " n'est pas une fonction";
         },
         notSatisfying: function (exc) {
             return "Votre code n'est pas entièrement satisfaisant: " +
@@ -108,7 +107,7 @@ yasmini.message = {
             return "Your code does not pass your own tests!";
         },
         notAFunction: function (fname) {
-            return fname, " is not a function!";
+            return fname + " is not a function!";
         },
         notSatisfying: function (exc) {
             return "Your code is not correct, it raises: " +
@@ -160,55 +159,64 @@ yasmini.messagefn = function (key) {
 
 let evalStudentTests_ = function (config, specfile) {
     yasmini.verbalize("+", yasmini.messagefn('startTests'));
+    function after (b) {
+        yasmini.verbalize("##", "after run_descriptions " + b);
+        return b;
+    }
     let descriptions = [];
     function _describe (msg, fn) {
         let desc = {msg: msg, fn: fn};
         descriptions.push(desc);
     }
+    function run_descriptions () {
+        return run_description(0);
+    }
     function run_description (i) {
-        yasmini.verbalize("##", process.uptime(),
-                          " run_description " + i);
+        yasmini.verbalize("##", "run_description " + i);
         if ( i < descriptions.length ) {
             let desc = descriptions[i];
             return yasmini.original_describe(desc.msg, desc.fn)
                 .hence(function (d) {
-                    yasmini.verbalize("##", process.uptime(),
-                                      " after describe");
+                    yasmini.verbalize("##", "after describe ");
                     if ( !d.pass && d.stopOnFailure ) {
                         config.exitCode = 1;
-                        return Promise.reject(false);
+                        return false;
                     } else {
                         return run_description(i+1);
                     }
                 });
         } else {
-            return Promise.resolve(true);
+            yasmini.verbalize("##", "run_description end ");
+            return Promise.resolve(true).then(after, after);
         }
     }
-    let current = yasmini.global;
-    Object.assign(current, {
-        require:   yasmini.imports.module.require,
-        yasmini:   yasmini,
-        //console:   yasmini.imports.console, // no associated setter!
-        describe:  _describe,
-        it:        yasmini.it,
-        expect:    yasmini.expect,
-        fail:      yasmini.fail  
-    });
-    for (let fname in config.functions) {
-        current[fname] = config.module[fname];
-    }
+    // let current = yasmini.global;
+    // Object.assign(current, {
+    //     require:   yasmini.imports.module.require,
+    //     yasmini:   yasmini,
+    //     //console:   yasmini.imports.console, // no associated setter!
+    //     describe:  _describe,
+    //     it:        yasmini.it,
+    //     expect:    yasmini.expect,
+    //     fail:      yasmini.fail  
+    // });
+    // for (let fname in config.functions) {
+    //     current[fname] = config.module[fname];
+    // }
+    
+    let current = config.module;
+    current.describe = _describe;
+    
     return new Promise(function (resolve, reject) {
-        let src = fs.readFileSync(specfile);
-        vm.runInNewContext(src, current);
-        yasmini.verbalize("##", process.uptime(),
-                          " after loading teacher tests");
-    }).then(run_description(0))
-      .finally(function (b) {
-          yasmini.verbalize("##", process.uptime(),
-                            " after run_descriptions " + b);
-          return b;
-    });
+        try {
+            let src = fs.readFileSync(specfile);
+            vm.runInContext(src, current);
+            yasmini.verbalize("##", "after loading teacher tests");
+            resolve(true);
+        } catch (exc) {
+            reject(exc);
+        }
+    }).then(run_descriptions);
 };
 
 /* Eval student's code.
@@ -233,29 +241,37 @@ let evalStudentCode_ = function (config, codefile) {
                 desc.description = this;
                 return fn.call(this);
             }
-            return yasmini.original_describe(msg, fnx);
+            desc.description = yasmini.original_describe(msg, fnx);
+            return desc.description;
         }
         let src = fs.readFileSync(codefile);
-        config.module = vm.createContext({
-            // allow student's code to require some Node modules:
-            require: yasmini.imports.module.require,
+        // config.module = vm.createContext({
+        //     // allow student's code to require some Node modules:
+        //     require: yasmini.imports.module.require,
+        //     yasmini: yasmini,
+        //     console: yasmini.imports.console,
+        //     describe: _describe,
+        //     it:       yasmini.it,
+        //     expect:   yasmini.expect,
+        //     fail:     yasmini.fail       
+        // });
+        let current = {
             yasmini: yasmini,
-            console: yasmini.imports.console,
             describe: _describe,
             it:       yasmini.it,
             expect:   yasmini.expect,
-            fail:     yasmini.fail       
-        });
-        // Evaluate that file:
+            fail:     yasmini.fail  
+        };
+        Object.setPrototypeOf(current, yasmini.global);
+        config.module = vm.createContext(current);
         try {
+            // Evaluate that file:
             vm.runInContext(src, config.module, { filename: codefile });
-            // sometimes there is no output, maybe adapt this message:
-            //yasmini.verbalize("+", "Voici ce que j'obtiens:");
-            //yasmini.verbalize("# " + config.resultDir + '/s.out');
 
             // Check that student's code is coherent wrt its own tests:
             let coherent = true;
             config.student.tests.forEach(function (d) {
+                // FIXME d.description might be not yet fulfilled!!!!!!!!!
                 coherent = coherent && d.description.pass;
             });
             if ( config.student.tests.length > 0 && ! coherent ) {
@@ -263,13 +279,13 @@ let evalStudentCode_ = function (config, codefile) {
                 resolve(false);
             }
 
-            // Check that required student's functions are present:
+            // Check that all required student's functions are present:
             for (let fname in config.functions) {
                 let f = config.module[fname];
-                //printerr(f);
                 if ( ! ( typeof f === 'function' ||
-                     f instanceof Function ) ) {
-                    yasmini.verbalize("-", yasmini.messagefn('notAFunction', fname));
+                         f instanceof Function ) ) {
+                    let msg = yasmini.messagefn('notAFunction', fname);
+                    yasmini.verbalize("-", msg);
                     resolve(false);
                 }
             }
@@ -295,6 +311,9 @@ let evalStudentCode_ = function (config, codefile) {
  */
 yasmini.verbalize = function (kind) {
     let result = kind + ' ';
+    if ( kind === '##' && process && process.uptime ) {
+        result += process.uptime() + ' ';
+    }
     for (let i=1 ; i<arguments.length ; i++) {
       var item = arguments[i];
       if ( item instanceof String || typeof item === 'string' ) {  
@@ -344,18 +363,20 @@ yasmini.markFile = function (config, codefile, specfile) {
     yasmini.config = config;
 
     // Check student's code with its own tests (if any):
-    yasmini.outputter = function (msg) {
-        yasmini.process.stdout.write(msg);
-    };
-
     function postEvalStudentCode (b) {
-        yasmini.verbalize("##", process.uptime(),
-                          ' after evalStudentCode: ' + b);
+        yasmini.verbalize("##", 'after evalStudentCode: ' + b);
+        function postStudentTests (bb) {
+            yasmini.verbalize("##", 'after evalStudentTests: ' + bb);
+            if ( ! bb ) {
+                yasmini.verbalize("-", yasmini.messagefn('stopEval'));
+            }
+            return bb;
+        }
         if ( b ) {
             yasmini.verbalize("+", yasmini.messagefn('finishEval'));
             return evalStudentTests_(config, specfile)
                 .catch(function (exc) {
-                    yasmini.verbalize("##", process.uptime(),
+                    yasmini.verbalize("##",
                                       ' catch after evalStudentTests: ' + exc);
                     return false;
                 })
@@ -365,23 +386,18 @@ yasmini.markFile = function (config, codefile, specfile) {
             return false;
         }
     }
-    function postStudentTests (b) {
-        yasmini.verbalize("##", process.uptime(),
-                          ' after evalStudentTests: ' + b);
-        if ( ! b ) {
-            yasmini.verbalize("-", yasmini.messagefn('stopEval'));
-        }
-        return b;
+    // Catch error in postEvalStudentCode (if any):
+    function catchRemains (reason) {
+        yasmini.verbalize("##", 'catchRemains: ' + reason);
     }
-    yasmini.verbalize("##", process.uptime(),
-                      ' before evalStudentCode');
+    yasmini.verbalize("##", 'before evalStudentCode');
     return evalStudentCode_(config, codefile)
-        .catch(function () {
-            yasmini.verbalize("##", process.uptime(),
-                              ' catch after evalStudentCode');
+        .catch(function (reason) {
+            yasmini.verbalize("##", 'catch after evalStudentCode ' + reason);
             return false;
         })
-        .then(postEvalStudentCode);
+        .then(postEvalStudentCode)
+        .catch(catchRemains);
 };
 
 // Verbalization
