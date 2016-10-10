@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2016-10-10 17:38:42 queinnec"
+// Time-stamp: "2016-10-10 20:00:35 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -56,6 +56,9 @@ yasmini.message = {
         failOwnTests: function () {
             return "Votre code ne passe pas vos propres tests!";
         },
+        isAFunction: function (fname) {
+            return fname + " est bien une fonction";
+        },
         notAFunction: function (fname) {
             return fname + " n'est pas une fonction";
         },
@@ -105,6 +108,9 @@ yasmini.message = {
         },
         failOwnTests: function () {
             return "Your code does not pass your own tests!";
+        },
+        isAFunction: function (fname) {
+            return fname + " exists and is a function.";
         },
         notAFunction: function (fname) {
             return fname + " is not a function!";
@@ -178,9 +184,11 @@ let evalStudentTests_ = function (config, specfile) {
             return yasmini.original_describe(desc.msg, desc.fn)
                 .hence(function (d) {
                     yasmini.verbalize("##", "after describe ");
-                    if ( !d.pass && d.stopOnFailure ) {
+                    if ( !d.pass ) {
                         config.exitCode = 1;
-                        return false;
+                        if ( d.stopOnFailure ) {
+                            return false;
+                        }
                     } else {
                         return run_description(i+1);
                     }
@@ -266,8 +274,10 @@ let evalStudentCode_ = function (config, codefile) {
         config.module = vm.createContext(current);
         try {
             // Evaluate that file:
+            yasmini.global = config.module;
             vm.runInContext(src, config.module, { filename: codefile });
 
+            let result = true;
             // Check that student's code is coherent wrt its own tests:
             let coherent = true;
             config.student.tests.forEach(function (d) {
@@ -276,19 +286,24 @@ let evalStudentCode_ = function (config, codefile) {
             });
             if ( config.student.tests.length > 0 && ! coherent ) {
                 yasmini.verbalize("--", yasmini.messagefn('failOwnTests'));
-                resolve(false);
+                result = false;
             }
 
             // Check that all required student's functions are present:
             for (let fname in config.functions) {
                 let f = config.module[fname];
-                if ( ! ( typeof f === 'function' ||
-                         f instanceof Function ) ) {
+                if ( ( typeof f === 'function' ||
+                       f instanceof Function ) ) {
+                    let msg = yasmini.messagefn('isAFunction', fname);
+                    yasmini.verbalize("+", msg);
+                } else {
                     let msg = yasmini.messagefn('notAFunction', fname);
                     yasmini.verbalize("-", msg);
-                    resolve(false);
+                    result = false;
                 }
             }
+            // Effective 
+            resolve(result);
         } catch (exc) {
             // Bad syntax or incorrect compilation throw an Error
             var msg = yasmini.messagefn('notSatisfying', exc);
