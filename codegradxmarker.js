@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2016-10-19 10:29:03 queinnec"
+// Time-stamp: "2016-10-19 12:07:50 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -24,10 +24,13 @@ infrastructure to generate the student's report.
 
 */
 
-let fs_writeFileSync =
-    (function (fs) { return fs.writeFileSync })(require('fs'));
-let fs_readFileSync = 
-    (function (fs) { return fs.readFileSync })(require('fs'));
+(function () {
+    // Don't pollute the global environment! It will be used to evaluate
+    // the student's code and the teacher's tests.
+    
+let fs = require('fs');
+let fs_writeFileSync = fs.writeFileSync;
+let fs_readFileSync = fs.readFileSync;
 let vm = require('vm');
 let yasmini = require('yasmini');
 let util = require('util');
@@ -220,7 +223,7 @@ let evalStudentTests_ = function (config, specfile) {
     
     return new Promise(function (resolve, reject) {
         try {
-            let src = fs_readFileSync(specfile);
+            let src = fs_readFileSync(specfile, 'UTF8');
             vm.runInContext(src, current);
             yasmini.verbalize("##", "after loading teacher tests");
             resolve(true);
@@ -255,7 +258,7 @@ let evalStudentCode_ = function (config, codefile) {
             desc.description = yasmini.original_describe(msg, fnx);
             return desc.description;
         }
-        let src = fs_readFileSync(codefile);
+        let src = fs_readFileSync(codefile, 'UTF8');
         // config.module = vm.createContext({
         //     // allow student's code to require some Node modules:
         //     require: yasmini.imports.module.require,
@@ -517,5 +520,8 @@ yasmini.class.Description.prototype.endHook = function () {
     this.update_();
     yasmini.printPartialResults_();
 };
+
+    // Don't pollute the global environment
+})();
 
 // end of codegraxmarker.js
