@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2016-10-19 12:07:50 queinnec"
+// Time-stamp: "2016-10-19 16:00:38 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -177,18 +177,15 @@ let evalStudentTests_ = function (config, specfile) {
     }
     let descriptions = [];
     function _describe (msg, fn) {
-        let desc = {msg: msg, fn: fn};
+        let desc = yasmini.original_describe(msg, fn);
         descriptions.push(desc);
-    }
-    function run_descriptions () {
-        return run_description(0);
+        return desc;
     }
     function run_description (i) {
         yasmini.verbalize("##", "run_description " + i);
         if ( i < descriptions.length ) {
             let desc = descriptions[i];
-            return yasmini.original_describe(desc.msg, desc.fn)
-                .hence(function (d) {
+            return desc.hence(function (d) {
                     yasmini.verbalize("##", "after describe ");
                     if ( !d.pass ) {
                         config.exitCode = 1;
@@ -204,19 +201,9 @@ let evalStudentTests_ = function (config, specfile) {
             return Promise.resolve(true).then(after, after);
         }
     }
-    // let current = yasmini.global;
-    // Object.assign(current, {
-    //     require:   yasmini.imports.module.require,
-    //     yasmini:   yasmini,
-    //     //console:   yasmini.imports.console, // no associated setter!
-    //     describe:  _describe,
-    //     it:        yasmini.it,
-    //     expect:    yasmini.expect,
-    //     fail:      yasmini.fail  
-    // });
-    // for (let fname in config.functions) {
-    //     current[fname] = config.module[fname];
-    // }
+    function run_descriptions () {
+        return run_description(0);
+    }
     
     let current = config.module;
     current.describe = _describe;
@@ -259,16 +246,6 @@ let evalStudentCode_ = function (config, codefile) {
             return desc.description;
         }
         let src = fs_readFileSync(codefile, 'UTF8');
-        // config.module = vm.createContext({
-        //     // allow student's code to require some Node modules:
-        //     require: yasmini.imports.module.require,
-        //     yasmini: yasmini,
-        //     console: yasmini.imports.console,
-        //     describe: _describe,
-        //     it:       yasmini.it,
-        //     expect:   yasmini.expect,
-        //     fail:     yasmini.fail       
-        // });
         let current = {
             yasmini:  yasmini,
             describe: _describe,
