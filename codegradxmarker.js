@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2016-10-10 20:00:35 queinnec"
+// Time-stamp: "2016-10-19 10:29:03 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -24,7 +24,10 @@ infrastructure to generate the student's report.
 
 */
 
-let fs = require('fs');
+let fs_writeFileSync =
+    (function (fs) { return fs.writeFileSync })(require('fs'));
+let fs_readFileSync = 
+    (function (fs) { return fs.readFileSync })(require('fs'));
 let vm = require('vm');
 let yasmini = require('yasmini');
 let util = require('util');
@@ -217,7 +220,7 @@ let evalStudentTests_ = function (config, specfile) {
     
     return new Promise(function (resolve, reject) {
         try {
-            let src = fs.readFileSync(specfile);
+            let src = fs_readFileSync(specfile);
             vm.runInContext(src, current);
             yasmini.verbalize("##", "after loading teacher tests");
             resolve(true);
@@ -252,7 +255,7 @@ let evalStudentCode_ = function (config, codefile) {
             desc.description = yasmini.original_describe(msg, fnx);
             return desc.description;
         }
-        let src = fs.readFileSync(codefile);
+        let src = fs_readFileSync(codefile);
         // config.module = vm.createContext({
         //     // allow student's code to require some Node modules:
         //     require: yasmini.imports.module.require,
@@ -264,11 +267,13 @@ let evalStudentCode_ = function (config, codefile) {
         //     fail:     yasmini.fail       
         // });
         let current = {
-            yasmini: yasmini,
+            yasmini:  yasmini,
             describe: _describe,
             it:       yasmini.it,
             expect:   yasmini.expect,
-            fail:     yasmini.fail  
+            fail:     yasmini.fail,
+            // allow student's code to require some Node modules:
+            require:  require
         };
         Object.setPrototypeOf(current, yasmini.global);
         config.module = vm.createContext(current);
@@ -366,7 +371,7 @@ yasmini.printPartialResults_ = function () {
       msg += "\n# " + s;
     });
     msg += "\n";
-    fs.writeFileSync(yasmini.config.resultFile, msg);
+    fs_writeFileSync(yasmini.config.resultFile, msg);
  };
 
 /* Mark student's code.
@@ -392,7 +397,7 @@ yasmini.markFile = function (config, codefile, specfile) {
             return evalStudentTests_(config, specfile)
                 .catch(function (exc) {
                     yasmini.verbalize("##",
-                                      ' catch after evalStudentTests: ' + exc);
+                      'catch after evalStudentTests: ' + exc);
                     return false;
                 })
                 .then(postStudentTests);
