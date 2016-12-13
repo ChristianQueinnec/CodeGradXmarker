@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2016-10-19 16:00:38 queinnec"
+// Time-stamp: "2016-12-13 17:12:22 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -35,6 +35,7 @@ let vm = require('vm');
 let yasmini = require('yasmini');
 let util = require('util');
 let Promise = require('bluebird');
+let he = require('he');
 module.exports = yasmini;
 
 // preserve that value:
@@ -45,7 +46,7 @@ yasmini.original_describe = yasmini.describe;
 yasmini.message = {
     fr: {
         startEval: function (code) {
-            return "J'évalue " + code;
+            return "J'évalue <code>" + he.encode(code) + "</code>";
         },
         startEvaluation: function () {
             return "Je vais évaluer votre code.";
@@ -63,26 +64,29 @@ yasmini.message = {
             return "Votre code ne passe pas vos propres tests!";
         },
         isAFunction: function (fname) {
-            return fname + " est bien une fonction";
+            return "<code>" + he.encode(fname) +
+                "</code> est bien une fonction";
         },
         notAFunction: function (fname) {
-            return fname + " n'est pas une fonction";
+            return "<code>" + he.encode(fname) +
+                "</code> n'est pas une fonction";
         },
         notSatisfying: function (exc) {
-            return "Votre code n'est pas entièrement satisfaisant: " +
-                exc.toString();
+            return "Votre code n'est pas entièrement satisfaisant: <code>" +
+                he.encode(exc.toString()) + "</code>";
         },
         bravo: function () {
             return '';
         },
         fail: function (index, actual) {
             return "Échec du test #" + index +
-                ": Je n'attendais pas votre résultat: " +
-                util.inspect(actual);
+                ": Je n'attendais pas votre résultat: <code>" +
+                he.encode(util.inspect(actual)) + "</code>";
         },
         failException: function (index, exception) {
-            return "Échec du test #" + index + ": Exception signalée: " +
-                exception;
+            return "Échec du test #" + index +
+                ": Exception signalée: <code>" +
+                he.encode(exception) + "</code>";
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
             return "Vous avez réussi " + expectationSuccessful +
@@ -93,12 +97,13 @@ yasmini.message = {
                 " de mes " + expectationAttempted + " tests.";
         },
         checkFunction: function (message) {
-            return "Je vais tester la fonction " + message;
+            return "Je vais tester la fonction <code>" +
+                he.encode(message) + "</code>";
         }
     },
     en: {
         startEval: function (code) {
-            return "Evaluating " + code;
+            return "Evaluating <code>" + he.encode(code) + "</code>";
         },
         startEvaluation: function () {
             return "Let's start to evaluate your code.";
@@ -116,26 +121,28 @@ yasmini.message = {
             return "Your code does not pass your own tests!";
         },
         isAFunction: function (fname) {
-            return fname + " exists and is a function.";
+            return "<code>" + he.encode(fname) +
+                "</code> exists and is a function.";
         },
         notAFunction: function (fname) {
-            return fname + " is not a function!";
+            return "<code>" + he.encode(fname) +
+                "</code> is not a function!";
         },
         notSatisfying: function (exc) {
-            return "Your code is not correct, it raises: " +
-                exc.toString();
+            return "Your code is not correct, it raises: <code>" +
+                he.encode(exc.toString()) + "</code>";
         },
         bravo: function () {
             return '';
         },
         fail: function (index, actual) {
             return "Failed test #" + index +
-                ": I was not expecting your result: " +
-                util.inspect(actual);
+                ": I was not expecting your result: <code>" +
+                he.encode(util.inspect(actual)) + "</code>";
         },
         failException: function (index, exception) {
-            return "Failed test #" + index + ": Exception is: " +
-                exception;
+            return "Failed test #" + index + ": Exception is: <code>" +
+                he.encode(exception) + "</code>";
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
             return "You pass " + expectationSuccessful + " of my " +
@@ -146,7 +153,8 @@ yasmini.message = {
                 " of my " + expectationAttempted + " tests.";
         },
         checkFunction: function (message) {
-            return "I'm going to check function " + message;
+            return "I'm going to check function <code>" +
+                he.encode(message) + "</code>";
         }
     }
 };
@@ -277,8 +285,8 @@ let evalStudentCode_ = function (config, codefile) {
             // Check that all required student's functions are present:
             for (let fname in config.functions) {
                 let f = config.module[fname];
-                if ( ( typeof f === 'function' ||
-                       f instanceof Function ) ) {
+                if ( typeof f === 'function' ||
+                     f instanceof Function ) {
                     let msg = yasmini.messagefn('isAFunction', fname);
                     yasmini.verbalize("+", msg);
                 } else {
