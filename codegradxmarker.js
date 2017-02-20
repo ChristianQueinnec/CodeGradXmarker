@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2016-12-13 17:12:22 queinnec"
+// Time-stamp: "2017-02-20 17:18:12 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -283,16 +283,18 @@ let evalStudentCode_ = function (config, codefile) {
             }
 
             // Check that all required student's functions are present:
-            for (let fname in config.functions) {
-                let f = config.module[fname];
-                if ( typeof f === 'function' ||
-                     f instanceof Function ) {
-                    let msg = yasmini.messagefn('isAFunction', fname);
-                    yasmini.verbalize("+", msg);
-                } else {
-                    let msg = yasmini.messagefn('notAFunction', fname);
-                    yasmini.verbalize("-", msg);
-                    result = false;
+            if ( ! config.dontCheckFunctions ) {
+                for (let fname in config.functions) {
+                    let f = config.module[fname];
+                    if ( typeof f === 'function' ||
+                         f instanceof Function ) {
+                        let msg = yasmini.messagefn('isAFunction', fname);
+                        yasmini.verbalize("+", msg);
+                    } else {
+                        let msg = yasmini.messagefn('notAFunction', fname);
+                        yasmini.verbalize("-", msg);
+                        result = false;
+                    }
                 }
             }
             // Effective 
