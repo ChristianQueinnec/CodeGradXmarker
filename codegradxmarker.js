@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-02-27 10:42:58 queinnec"
+// Time-stamp: "2017-02-27 14:26:18 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -226,7 +226,8 @@ let evalStudentTests_ = function (config, specfile) {
     return new Promise(function (resolve, reject) {
         try {
             let src = fs_readFileSync(specfile, 'UTF8');
-            vm.runInThisContext(src);
+            vm.runInThisContext(src, { filename: specfile,
+                                       displayErrors: true });
             yasmini.verbalize("##", "after loading teacher tests");
             resolve(true);
         } catch (exc) {
