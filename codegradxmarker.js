@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-02-20 17:18:12 queinnec"
+// Time-stamp: "2017-02-27 10:42:58 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -31,11 +31,14 @@ infrastructure to generate the student's report.
 let fs = require('fs');
 let fs_writeFileSync = fs.writeFileSync;
 let fs_readFileSync = fs.readFileSync;
+let fs_renameSync = fs.renameSync;
 let vm = require('vm');
 let yasmini = require('yasmini');
 let util = require('util');
 let Promise = require('bluebird');
 let he = require('he');
+
+// Re-export yasmini:
 module.exports = yasmini;
 
 // preserve that value:
@@ -43,7 +46,7 @@ yasmini.original_describe = yasmini.describe;
 
 // Messages in two languages (fr and en):
 
-yasmini.message = {
+Object.assign(yasmini.message, {
     fr: {
         startEval: function (code) {
             return "J'évalue <code>" + he.encode(code) + "</code>";
@@ -157,7 +160,7 @@ yasmini.message = {
                 he.encode(message) + "</code>";
         }
     }
-};
+});
 
 yasmini.messagefn = function (key) {
     let translator = yasmini.message[yasmini.lang || 'fr'];
@@ -174,7 +177,8 @@ yasmini.messagefn = function (key) {
     }
 };
 
-/* Check student's code with teacher's tests
+/* Check student's code with teacher's tests.
+   This evaluation is done in the current global environment.
  */
 
 let evalStudentTests_ = function (config, specfile) {
@@ -212,14 +216,17 @@ let evalStudentTests_ = function (config, specfile) {
     function run_descriptions () {
         return run_description(0);
     }
-    
-    let current = config.module;
-    current.describe = _describe;
+
+    // Use the same global context where student's code was evaluated.
+    // It contains some yasmini related variables and student's own
+    // definitions. For teacher's test code, we setup a new `describe`
+    // function:
+    global.describe = _describe;
     
     return new Promise(function (resolve, reject) {
         try {
             let src = fs_readFileSync(specfile, 'UTF8');
-            vm.runInContext(src, current);
+            vm.runInThisContext(src);
             yasmini.verbalize("##", "after loading teacher tests");
             resolve(true);
         } catch (exc) {
@@ -228,12 +235,10 @@ let evalStudentTests_ = function (config, specfile) {
     }).then(run_descriptions);
 };
 
-/* Eval student's code.
+/* Eval student's code (in the current global environment)
  * Grab functions the exercise asked for, 
  * grab also the descriptions (the unit tests the student wrote).
  * return false to stop the marking process.
-
-CAUTION: this supposes at most one describe() in student's code!
 */
 
 let evalStudentCode_ = function (config, codefile) {
@@ -243,6 +248,8 @@ let evalStudentCode_ = function (config, codefile) {
         config.student = {
             tests: []
         };
+        // This `describe` evaluates and memorizes the
+        // descriptions present in student's code.
         function _describe (msg, fn) {
             let desc = { msg: msg, fn: fn, description: undefined };
             config.student.tests.push(desc);
@@ -254,6 +261,9 @@ let evalStudentCode_ = function (config, codefile) {
             return desc.description;
         }
         let src = fs_readFileSync(codefile, 'UTF8');
+        // Prepare the global environment where will be evaluated
+        // the student's code. The students should not alter these
+        // global variables but they may use them to write their own tests:
         let current = {
             yasmini:  yasmini,
             describe: _describe,
@@ -263,12 +273,11 @@ let evalStudentCode_ = function (config, codefile) {
             // allow student's code to require some Node modules:
             require:  require
         };
-        Object.setPrototypeOf(current, yasmini.global);
-        config.module = vm.createContext(current);
+        Object.assign(global, current);
         try {
-            // Evaluate that file:
-            yasmini.global = config.module;
-            vm.runInContext(src, config.module, { filename: codefile });
+            // Evaluate student's code in the current global environment:
+            vm.runInThisContext(src, { filename: codefile,
+                                       displayErrors: true });
 
             let result = true;
             // Check that student's code is coherent wrt its own tests:
@@ -285,7 +294,7 @@ let evalStudentCode_ = function (config, codefile) {
             // Check that all required student's functions are present:
             if ( ! config.dontCheckFunctions ) {
                 for (let fname in config.functions) {
-                    let f = config.module[fname];
+                    let f = global[fname];
                     if ( typeof f === 'function' ||
                          f instanceof Function ) {
                         let msg = yasmini.messagefn('isAFunction', fname);
