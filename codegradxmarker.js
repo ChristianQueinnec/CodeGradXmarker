@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-02-27 14:26:18 queinnec"
+// Time-stamp: "2017-03-04 17:45:50 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -144,7 +144,8 @@ Object.assign(yasmini.message, {
                 he.encode(util.inspect(actual)) + "</code>";
         },
         failException: function (index, exception) {
-            return "Failed test #" + index + ": Exception is: <code>" +
+            return "Failed test #" + index +
+                ": Exception is: <code>" +
                 he.encode(exception) + "</code>";
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
@@ -462,7 +463,7 @@ yasmini.class.Expectation.prototype.endHook = function () {
     if ( ! this.runEndHook ) {
         if (this.pass) {
             msg = yasmini.messagefn('bravo');
-            yasmini.verbalize('+', msg);
+            yasmini.verbalize('++', msg);
         } else {
             if ( this.raisedException ) {
                 msg = yasmini.messagefn(
@@ -470,7 +471,7 @@ yasmini.class.Expectation.prototype.endHook = function () {
             } else {
                 msg = yasmini.messagefn('fail', this.index, this.actual);
             }
-            yasmini.verbalize('-', msg);
+            yasmini.verbalize('--', msg);
         }
         this.runEndHook = true;
     }
