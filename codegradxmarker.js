@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-03-04 17:45:50 queinnec"
+// Time-stamp: "2017-04-07 14:37:26 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -199,23 +199,22 @@ let evalStudentTests_ = function (config, specfile) {
         if ( i < descriptions.length ) {
             let desc = descriptions[i];
             return desc.hence(function (d) {
-                    yasmini.verbalize("##", "after describe ");
-                    if ( !d.pass ) {
-                        config.exitCode = 1;
-                        if ( d.stopOnFailure ) {
-                            return false;
-                        }
-                    } else {
-                        return run_description(i+1);
+                yasmini.verbalize("##", "after describe ");
+                if ( !d.pass ) {
+                    config.exitCode = 1;
+                    if ( d.stopOnFailure ) {
+                        return Promise.resolve(false);
                     }
-                });
+                }
+                return run_description(i+1);
+            });
         } else {
             yasmini.verbalize("##", "run_description end ");
-            return Promise.resolve(true).then(after, after);
+            return Promise.resolve(true);
         }
     }
     function run_descriptions () {
-        return run_description(0);
+        return run_description(0).then(after, after);
     }
 
     // Use the same global context where student's code was evaluated.
