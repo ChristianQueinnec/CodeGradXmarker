@@ -28,11 +28,13 @@ test-all :
 
 # ############## NPM package
 # Caution: npm takes the whole directory that is . and not the sole
-# content of arker.tgz 
+# content of marker.tgz 
 
 publish : clean 
 	-rm -rf node_modules/yasmini
-	npm install yasmini
+	-rm -rf node_modules/codegradx*
+	npm install -S yasmini
+	npm install -S codegradxlib
 	git status .
 	-git commit -m "NPM publication `date`" .
 	git push
@@ -41,6 +43,7 @@ publish : clean
 	cd tmp/CodeGradXmarker/ && npm version patch && npm publish
 	cp -pf tmp/CodeGradXmarker/package.json .
 	rm -rf tmp
+	npm -g install codegradxmarker
 
 CodeGradXmarker.tgz : clean
 	-rm -rf tmp
