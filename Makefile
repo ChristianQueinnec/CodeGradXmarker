@@ -43,7 +43,7 @@ publish : clean
 	cd tmp/CodeGradXmarker/ && npm version patch && npm publish
 	cp -pf tmp/CodeGradXmarker/package.json .
 	rm -rf tmp
-	npm -g install codegradxmarker
+	npm install -g codegradxmarker
 
 CodeGradXmarker.tgz : clean
 	-rm -rf tmp

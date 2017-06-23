@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-04-07 14:37:26 queinnec"
+// Time-stamp: "2017-06-23 14:13:43 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -82,12 +82,12 @@ Object.assign(yasmini.message, {
             return '';
         },
         fail: function (index, actual) {
-            return "Échec du test #" + index +
+            return "Échec de l'assertion #" + index +
                 ": Je n'attendais pas votre résultat: <code>" +
                 he.encode(util.inspect(actual)) + "</code>";
         },
         failException: function (index, exception) {
-            return "Échec du test #" + index +
+            return "Échec de l'assertion #" + index +
                 ": Exception signalée: <code>" +
                 he.encode(exception) + "</code>";
         },
@@ -139,12 +139,12 @@ Object.assign(yasmini.message, {
             return '';
         },
         fail: function (index, actual) {
-            return "Failed test #" + index +
+            return "Failed expectation #" + index +
                 ": I was not expecting your result: <code>" +
                 he.encode(util.inspect(actual)) + "</code>";
         },
         failException: function (index, exception) {
-            return "Failed test #" + index +
+            return "Failed expectation #" + index +
                 ": Exception is: <code>" +
                 he.encode(exception) + "</code>";
         },
