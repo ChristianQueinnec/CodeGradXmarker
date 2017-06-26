@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-06-26 08:49:13 queinnec"
+// Time-stamp: "2017-06-26 18:50:34 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -31,7 +31,7 @@ infrastructure to generate the student's report.
 let fs = require('fs');
 let fs_writeFileSync = fs.writeFileSync;
 let fs_readFileSync = fs.readFileSync;
-let fs_renameSync = fs.renameSync;
+//let fs_renameSync = fs.renameSync;
 let vm = require('vm');
 let yasmini = require('yasmini');
 let util = require('util');
@@ -289,7 +289,7 @@ let evalStudentCode_ = function (config, codefile) {
             expect:   yasmini.expect,
             fail:     yasmini.fail,
             // allow student's code to require some Node modules:
-            require:  require
+            require:  yasmini.require || require
         };
         Object.assign(global, current);
         try {
