@@ -1,6 +1,6 @@
 {
   "name": "codegradxmarker",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "CodeGradX marker and verbalizer library",
   "keywords": [
     "CodeGradX",
@@ -17,12 +17,14 @@
   },
   "dependencies": {
     "bluebird": "^3.4",
+    "browserify": "^14.4.0",
     "codegradxlib": "^1.0.56",
-    "he": "^1.1",
+    "he": "^1.1.1",
+    "jasmine": "^2.6.0",
     "yasmini": "^0.2.23"
   },
   "devDependencies": {
-    "jshint": "^2.9"
+    "jshint": "^2.9.5"
   },
   "author": {
     "name": "Christian Queinnec",

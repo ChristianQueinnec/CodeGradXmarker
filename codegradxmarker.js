@@ -1,5 +1,5 @@
 // Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-06-23 14:13:43 queinnec"
+// Time-stamp: "2017-06-26 08:49:13 queinnec"
 
 /*
 Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
@@ -177,6 +177,23 @@ yasmini.messagefn = function (key) {
         return JSON.stringify(arguments);
     }
 };
+
+/** 
+    yasmini.makeAsPRE
+    @param {string} s     long string with newlines
+    @return {string}      long string with encoded newlines
+
+    Transform a string containing newlines into a string where newlines
+    are transformed into pilcrows. A post-tool may convert back these
+    pilcrows into newlines.
+
+*/
+
+yasmini.makeAsPRE = function (s) {
+    let pilcrow = '¶'; // U+00B6 pilcrow
+    s = s.replace(/\n/g, pilcrow);
+    return pilcrow + s + pilcrow;
+};  
 
 /* Check student's code with teacher's tests.
    This evaluation is done in the current global environment.
