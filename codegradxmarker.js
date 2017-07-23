@@ -1,8 +1,23 @@
-// Some utilities (in French or English) for CodeGradX.
-// Time-stamp: "2017-06-26 18:50:34 queinnec"
+// CodeGradXmarker
+// Time-stamp: "2017-07-23 10:54:48 queinnec"
 
-/*
-Copyright (C) 2016 Christian.Queinnec@CodeGradX.org
+/** Some utilities (in French or English) for CodeGradX.
+Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
+
+@module codegradxmarker
+@author Christian Queinnec <Christian.Queinnec@codegradx.org>
+@license MIT
+@see {@link http://codegradx.org/|CodeGradX} site.
+
+This module describes how student's code (and tests) are run and
+compared to teacher's code. This plugin is run within CodeGradX
+infrastructure to generate the student's report.
+
+This code is node.js-specific. It requires the yasmini module and the
+specific yasmini.require function to dynamically load modules.
+See https://github.com/paracamplus/Yasmini.git
+
+
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -16,11 +31,6 @@ WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION
 OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-See https://github.com/paracamplus/Yasmini.git
-
- This module describes how student's code (and tests) are run and
-compared to teacher's code. This plugin is run within CodeGradX
-infrastructure to generate the student's report.
 
 */
 
@@ -272,6 +282,7 @@ let evalStudentCode_ = function (config, codefile) {
             let desc = { msg: msg, fn: fn, description: undefined };
             config.student.tests.push(desc);
             function fnx () {
+                /*jshint validthis:true */
                 desc.description = this;
                 return fn.call(this);
             }
@@ -289,7 +300,7 @@ let evalStudentCode_ = function (config, codefile) {
             expect:   yasmini.expect,
             fail:     yasmini.fail,
             // allow student's code to require some Node modules:
-            require:  yasmini.require || require
+            require:  yasmini.require
         };
         Object.assign(global, current);
         try {
