@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "bluebird": "^3.4",
+    "codegradxlib": "^1.0.59",
     "he": "^1.1.1",
     "yasmini": "^0.2.23"
   },
