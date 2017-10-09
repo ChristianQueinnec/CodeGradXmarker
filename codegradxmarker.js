@@ -1,5 +1,5 @@
 // CodeGradXmarker
-// Time-stamp: "2017-07-23 10:54:48 queinnec"
+// Time-stamp: "2017-10-09 20:31:55 queinnec"
 
 /** Some utilities (in French or English) for CodeGradX.
 Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
@@ -367,7 +367,7 @@ yasmini.verbalize = function (kind) {
       if ( item instanceof String || typeof item === 'string' ) {  
           result += item;
       } else {
-          let s = yasmini.imports.util.inspect(arguments[i]);
+          let s = he.encode(yasmini.imports.util.inspect(arguments[i]));
           result += s;
       }
     }
