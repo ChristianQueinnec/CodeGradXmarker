@@ -1,5 +1,5 @@
 // CodeGradXmarker
-// Time-stamp: "2017-10-15 15:22:22 queinnec"
+// Time-stamp: "2017-10-16 15:52:04 queinnec"
 
 /** Some utilities (in French or English) for CodeGradX.
 Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
@@ -89,9 +89,12 @@ Object.assign(yasmini.message, {
                 he.encode(exc.toString()) + "</code>";
         },
         bravo: function () {
-            return '';
+            return 'OK';
         },
         fail: function (index, actual) {
+            if ( typeof actual === 'undefined' ) {
+                actual = 'undefined';
+            }
             return "Échec de l'assertion #" + index +
                 ": Je n'attendais pas votre résultat: <code>" +
                 he.encode(util.inspect(actual)) + "</code>";
@@ -99,7 +102,7 @@ Object.assign(yasmini.message, {
         failException: function (index, exception) {
             return "Échec de l'assertion #" + index +
                 ": Exception signalée: <code>" +
-                he.encode(exception) + "</code>";
+                he.encode(exception.toString()) + "</code>";
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
             return "Vous avez réussi " + expectationSuccessful +
@@ -146,9 +149,12 @@ Object.assign(yasmini.message, {
                 he.encode(exc.toString()) + "</code>";
         },
         bravo: function () {
-            return '';
+            return 'OK';
         },
         fail: function (index, actual) {
+            if ( typeof actual === 'undefined' ) {
+                actual = 'undefined';
+            }
             return "Failed expectation #" + index +
                 ": I was not expecting your result: <code>" +
                 he.encode(util.inspect(actual)) + "</code>";
@@ -156,7 +162,7 @@ Object.assign(yasmini.message, {
         failException: function (index, exception) {
             return "Failed expectation #" + index +
                 ": Exception is: <code>" +
-                he.encode(exception) + "</code>";
+                he.encode(exception.toString()) + "</code>";
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
             return "You pass " + expectationSuccessful + " of my " +
@@ -188,6 +194,12 @@ yasmini.messagefn = function (key) {
     }
 };
 
+yasmini.trace = function (msg) {
+    if (yasmini.config.verbose) {
+        yasmini.verbalize('##', msg);
+    }
+};
+    
 /** 
     yasmini.makeAsPRE
     @param {string} s     long string with newlines
@@ -276,7 +288,9 @@ let evalStudentTests_ = function (config, specfile, things) {
             let src = fs_readFileSync(specfile, 'UTF8');
             let imports = '';
             for (let fname in config.functions) {
-                imports += `let ${fname} = yasmini.require.exports.${fname};\n`;
+                if ( typeof yasmini.require.exports[fname] !== 'undefined' ) {
+                    imports += `let ${fname} = yasmini.require.exports.${fname};\n`;
+                }
             }
             src = `
 ${imports}
@@ -284,7 +298,7 @@ ${imports}
 ${src}
             `;
             vm.runInThisContext(src, { displayErrors: true });
-            yasmini.verbalize("##", "after teacher's test function defined");
+            yasmini.verbalize("##", "after teacher's tests defined");
             resolve(descriptions);
         } catch (exc) {
             reject(exc);
@@ -327,7 +341,7 @@ let evalStudentCode_ = function (config, codefile) {
 
         let exports = '';
         for (let fname in config.functions) {
-            exports += `  require.exports.${fname} = ${fname};\n`;
+            exports += `  if ( typeof ${fname} !== 'undefined' ) { require.exports.${fname} = ${fname}; }\n`;
         }
         src = `(function (require, global) {
 ${src}
@@ -343,10 +357,10 @@ ${exports}
             // Evaluate student's code in the current global environment:
             let studentFunction =
                 vm.runInThisContext(src, { displayErrors: true });
-            yasmini.verbalize('##', "after student's code function definition");
+            yasmini.trace("after student's code function definition");
             yasmini.require.exports = result;
             studentFunction(yasmini.require, global);
-            yasmini.verbalize('##', "after invoking student's code function");
+            yasmini.trace("after invoking student's code function");
 
             // Check that student's code is coherent wrt its own tests:
             let coherent = true;
@@ -361,8 +375,10 @@ ${exports}
 
             // Check that all required student's functions are present:
             if ( result && ! config.dontCheckFunctions ) {
+                yasmini.trace("Checking extractions");
                 for (let fname in config.functions) {
                     //let f = global[fname];
+                    yasmini.trace(`Checking extraction ${fname}`);
                     let f = result[fname];
                     if ( typeof f === 'function' ||
                          f instanceof Function ) {
@@ -376,7 +392,7 @@ ${exports}
                 }
             }
             // result is the hash of student's function or undefined:
-            yasmini.verbalize('##', `Student result: ${util.inspect(result)}`);
+            //yasmini.trace(`Student result: ${yasmini.makeAsPRE(util.inspect(result))}`);
             resolve(result);
         } catch (exc) {
             // Bad syntax or incorrect compilation throw an Error
@@ -492,6 +508,7 @@ yasmini.markFile = function (config, codefile, specfile) {
 // Verbalization
 
 yasmini.class.Expectation.prototype.beginHook = function () {
+    yasmini.trace(`running Expectation.beginHook id=${this.id}`);
     // exitCode is initially undefined. We initialize it with 0 as soon
     // as at least one expectation is to be processed:
     if ( ! yasmini.config.exitCode ) {
@@ -510,6 +527,7 @@ yasmini.class.Expectation.prototype.beginHook = function () {
 };
 
 yasmini.class.Expectation.prototype.displayHook = function () {
+    yasmini.trace(`running Expectation.displayHook id=${this.id}`);
     var msg;
     if ( ! this.alreadyShownTest ) {
         if ( this.verbose ) {
@@ -526,10 +544,12 @@ yasmini.class.Expectation.prototype.displayHook = function () {
 };
 
 yasmini.class.Expectation.prototype.matchHook = function () {
+    yasmini.trace(`running Expectation.matchHook id=${this.id}`);
     this.displayHook();
 };
 
 yasmini.class.Expectation.prototype.endHook = function () {
+    yasmini.trace(`running Expectation.endHook id=${this.id} runEndHook=${this.runEndHook}, pass=${this.pass}`);
     var msg;
     if ( ! this.runEndHook ) {
         if (this.pass) {
@@ -551,6 +571,7 @@ yasmini.class.Expectation.prototype.endHook = function () {
 };
 
 yasmini.class.Specification.prototype.beginHook = function () {
+    yasmini.trace(`running Specification.beginHook id=${this.id}`);
     let msg = this.message;
     yasmini.verbalize('+', msg);
     this.update_();
@@ -558,6 +579,7 @@ yasmini.class.Specification.prototype.beginHook = function () {
 };
 
 yasmini.class.Specification.prototype.endHook = function () {
+    yasmini.trace(`running Specification.endHook id=${this.id}`);
     this.update_();
     yasmini.printPartialResults_();
     var msg;
@@ -578,6 +600,7 @@ yasmini.class.Specification.prototype.endHook = function () {
 };
 
 yasmini.class.Description.prototype.beginHook = function () {
+    yasmini.trace(`running Description.beginHook id=${this.id}`);
     yasmini.config.descriptions.push(this);
     let msg = yasmini.messagefn('checkFunction', this.message);
     yasmini.verbalize("+", msg);
@@ -586,6 +609,7 @@ yasmini.class.Description.prototype.beginHook = function () {
 };
 
 yasmini.class.Description.prototype.endHook = function () {
+    yasmini.trace(`running Description.endHook id=${this.id}`);
     this.update_();
     yasmini.printPartialResults_();
 };
