@@ -1,5 +1,5 @@
 // CodeGradXmarker
-// Time-stamp: "2017-10-16 15:52:04 queinnec"
+// Time-stamp: "2017-10-23 18:03:37 queinnec"
 
 /** Some utilities (in French or English) for CodeGradX.
 Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
@@ -44,6 +44,7 @@ let fs_readFileSync = fs.readFileSync;
 //let fs_renameSync = fs.renameSync;
 let vm = require('vm');
 let yasmini = require('yasmini');
+    yasmini.require = yasmini.yasmini_require;
 let util = require('util');
 let Promise = require('bluebird');
 let he = require('he');
@@ -229,7 +230,7 @@ let defaultCurrentGlobal = {
     expect:   yasmini.expect,
     fail:     yasmini.fail,
     // allow student's or teacher's code to require some Node modules:
-    require:  yasmini.require
+    require:  yasmini.yasmini_require
 };
 
 /* Check student's code with teacher's tests.
