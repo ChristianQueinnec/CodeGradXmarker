@@ -1,5 +1,5 @@
 // CodeGradXmarker
-// Time-stamp: "2017-10-23 18:03:37 queinnec"
+// Time-stamp: "2018-07-01 18:19:10 queinnec"
 
 /** Some utilities (in French or English) for CodeGradX.
 Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
@@ -242,7 +242,7 @@ let defaultCurrentGlobal = {
 
  */
 
-let evalStudentTests_ = function (config, specfile, things) {
+let evalStudentTests_ = function (config, specfile) {
     yasmini.verbalize("+", yasmini.messagefn('startTests'));
     function after (b) {
         yasmini.verbalize("##", "after run_descriptions " + b);

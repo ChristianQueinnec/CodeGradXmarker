@@ -8,7 +8,7 @@ clean :
 # ############## Working rules:
 
 lint :
-	node_modules/.bin/jshint codegradxmarker.js spec/*.js
+	eslint codegradxmarker.js
 
 tests : clean
 	-rm .fw4ex.json [0-9]*ml
@@ -17,6 +17,12 @@ tests : clean
 reset :
 	npm install -g yasmini
 	npm link yasmini
+
+update :
+	-rm -rf node_modules
+	npm install codegradxlib@`jq -r .version < ../CodeGradXlib/package.json`
+	npm install yasmini@`jq -r .version < ../../Exercises/JSCommon/Yasmini/package.json`
+	npm install
 
 refresh :
 	cp -p ../../Exercises/JScommon/Yasmini/yasmini.js \
@@ -33,8 +39,8 @@ test-all :
 publish : clean 
 	-rm -rf node_modules/yasmini
 	-rm -rf node_modules/codegradx*
-	npm install -S yasmini
-	npm install -S codegradxlib
+	npm install -S yasmini@`jq -r .version < ../../Exercises/JSCommon/Yasmini/package.json`
+	npm install -S codegradxlib@`jq -r .version < ../CodeGradXlib/package.json`
 	git status .
 	-git commit -m "NPM publication `date`" .
 	git push
@@ -43,7 +49,7 @@ publish : clean
 	cd tmp/CodeGradXmarker/ && npm version patch && npm publish
 	cp -pf tmp/CodeGradXmarker/package.json .
 	rm -rf tmp
-	npm install -g codegradxmarker
+	npm install -g codegradxmarker@`jq -r .version < package.json`
 
 CodeGradXmarker.tgz : clean
 	-rm -rf tmp
