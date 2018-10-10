@@ -1,5 +1,5 @@
 // CodeGradXmarker
-// Time-stamp: "2018-07-01 18:19:10 queinnec"
+// Time-stamp: "2018-10-10 20:06:29 queinnec"
 
 /** Some utilities (in French or English) for CodeGradX.
 Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
@@ -230,7 +230,7 @@ let defaultCurrentGlobal = {
     expect:   yasmini.expect,
     fail:     yasmini.fail,
     // allow student's or teacher's code to require some Node modules:
-    require:  yasmini.yasmini_require
+    require:  yasmini.yasmini_require || yasmini.require
 };
 
 /* Check student's code with teacher's tests.
@@ -425,7 +425,7 @@ yasmini.verbalize = function (kind) {
       if ( item instanceof String || typeof item === 'string' ) {  
           result += item;
       } else {
-          let s = he.encode(yasmini.imports.util.inspect(arguments[i]));
+          let s = he.encode(util.inspect(arguments[i]));
           result += s;
       }
     }
