@@ -1,5 +1,5 @@
 // CodeGradXmarker
-// Time-stamp: "2018-10-10 20:06:29 queinnec"
+// Time-stamp: "2019-01-11 09:15:29 queinnec"
 
 /** Some utilities (in French or English) for CodeGradX.
 Copyright (C) 2016-2017 Christian.Queinnec@CodeGradX.org
@@ -92,18 +92,28 @@ Object.assign(yasmini.message, {
         bravo: function () {
             return 'OK';
         },
-        fail: function (index, actual) {
+        fail: function (index, actual, code) {
             if ( typeof actual === 'undefined' ) {
                 actual = 'undefined';
             }
-            return "Échec de l'assertion #" + index +
-                ": Je n'attendais pas votre résultat: <code>" +
+            let msg = "Échec de l'assertion #" + index +
+                ": Je n'attendais pas cette valeur <code>" +
                 he.encode(util.inspect(actual)) + "</code>";
+            if ( yasmini.config.showTest && code ) {
+                msg += " résultat pour <code>" +
+                    he.encode(code) + "</code>";
+            }
+            return msg;
         },
-        failException: function (index, exception) {
-            return "Échec de l'assertion #" + index +
+        failException: function (index, exception, code) {
+            let msg = "Échec de l'assertion #" + index +
                 ": Exception signalée: <code>" +
                 he.encode(exception.toString()) + "</code>";
+            if ( yasmini.config.showTest && code ) {
+                msg += " lors de l'évaluation de <code>" +
+                    he.encode(code) + "</code>";
+            }
+            return msg;
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
             return "Vous avez réussi " + expectationSuccessful +
@@ -152,18 +162,28 @@ Object.assign(yasmini.message, {
         bravo: function () {
             return 'OK';
         },
-        fail: function (index, actual) {
+        fail: function (index, actual, code) {
             if ( typeof actual === 'undefined' ) {
                 actual = 'undefined';
             }
-            return "Failed expectation #" + index +
-                ": I was not expecting your result: <code>" +
+            let msg = "Failed expectation #" + index +
+                ": I was not expecting this value: <code>" +
                 he.encode(util.inspect(actual)) + "</code>";
+            if ( yasmini.config.showTest && code ) {
+                msg += " as result of " +
+                    "<code>" + he.encode(code) + "</code>";
+            }
+            return msg;
         },
-        failException: function (index, exception) {
-            return "Failed expectation #" + index +
+        failException: function (index, exception, code) {
+            let msg = "Failed expectation #" + index +
                 ": Exception is: <code>" +
                 he.encode(exception.toString()) + "</code>";
+            if ( yasmini.config.showTest && code ) {
+                msg += " when evaluating " +
+                    "<code>" + he.encode(code) + "</code>";
+            }
+            return msg;
         },
         fullSuccess: function (expectationSuccessful, expectationAttempted) {
             return "You pass " + expectationSuccessful + " of my " +
@@ -200,7 +220,24 @@ yasmini.trace = function (msg) {
         yasmini.verbalize('##', msg);
     }
 };
+
+yasmini.info = function (...msg) {
+    yasmini.verbalize('##', ...msg);
+};
+
+yasmini.success = function (...msg) {
+    yasmini.verbalize('+', ...msg);
+};
+
+yasmini.warn = function (...msg) {
+    yasmini.verbalize('-', ...msg);
+};
     
+yasmini.error = function (...msg) {
+    yasmini.verbalize('--', ...msg);
+};
+
+
 /** 
     yasmini.makeAsPRE
     @param {string} s     long string with newlines
@@ -230,7 +267,7 @@ let defaultCurrentGlobal = {
     expect:   yasmini.expect,
     fail:     yasmini.fail,
     // allow student's or teacher's code to require some Node modules:
-    require:  yasmini.yasmini_require || yasmini.require
+    require:  yasmini.require
 };
 
 /* Check student's code with teacher's tests.
@@ -559,9 +596,9 @@ yasmini.class.Expectation.prototype.endHook = function () {
         } else {
             if ( this.raisedException ) {
                 msg = yasmini.messagefn(
-                    'failException', this.index, this.exception);
+                    'failException', this.index, this.exception, this.code);
             } else {
-                msg = yasmini.messagefn('fail', this.index, this.actual);
+                msg = yasmini.messagefn('fail', this.index, this.actual, this.code);
             }
             yasmini.verbalize('--', msg);
         }
